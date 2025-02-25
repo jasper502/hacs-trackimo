@@ -30,7 +30,7 @@ class TrackimoDataCoordinator(DataUpdateCoordinator):
                     if response.status == 200:
                         data = await response.json()
                         # Assume API returns a list of devices; adjust based on actual response
-                        return {device["id"]: device for device in data}
+                        return {device["device_id"]: device for device in data}
                     else:
                         raise UpdateFailed(f"API error: {response.status}")
         except Exception as e:
