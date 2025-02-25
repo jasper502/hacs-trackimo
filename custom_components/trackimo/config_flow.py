@@ -5,7 +5,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries, core, exceptions
 
-from homeassistant.helpers.config_entry_oauth2_flow import AbstractOAuth2FlowHandler
+from homeassistant.helpers import config_entry_oauth2_flow
 
 from homeassistant.components.application_credentials import (
     AuthorizationServer,
@@ -75,18 +75,6 @@ _LOGGER = logging.getLogger(__name__)
 
 class ConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler):
     DOMAIN = "trackimo"
-
-    @property
-    def logger(self):
-        return _LOGGER
-
-    @property
-    def extra_authorize_data(self):
-        return {"scope": "read"}  # Adjust based on Trackimo's required scopes
-
-    async def async_step_user(self, user_input=None):
-        self.async_set_unique_id(self.DOMAIN)
-        return await super().async_step_user(user_input)
 
     async def async_oauth_create_entry(self, data):
         return self.async_create_entry(title="Trackimo", data=data)
