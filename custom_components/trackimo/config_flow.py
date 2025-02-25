@@ -7,6 +7,11 @@ from homeassistant import config_entries, core, exceptions
 
 from homeassistant.helpers.config_entry_oauth2_flow import AbstractOAuth2FlowHandler
 
+from homeassistant.components.application_credentials import (
+    AuthorizationServer,
+    async_register_authorization_server,
+)
+
 from trackimo import Trackimo
 
 from .const import DOMAIN, TRACKIMO_CLIENTID, TRACKIMO_CLIENTSECRET
@@ -15,6 +20,15 @@ _LOGGER = logging.getLogger(__name__)
 
 DATA_SCHEMA = vol.Schema({"username": str, "password": str})
 
+async def async_setup(hass):
+    await async_register_authorization_server(
+        hass,
+        "trackimo",
+        AuthorizationServer(
+            authorize_url="https://app.trackimo.com/api/v3/oauth2/auth",  # Verify URL
+            token_url="https://api.trackimo.com/api/v3/oauth2/token",          # Verify URL
+        ),
+    )
 
 async def validate_input(hass: core.HomeAssistant, data):
     """Validate the user input allows us to connect.
