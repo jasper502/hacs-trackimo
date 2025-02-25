@@ -1,5 +1,6 @@
+import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.helpers import config_entry_oauth2_flow
+from homeassistant.helpers.config_entry_oauth2_flow import AbstractOAuth2FlowHandler
 
 class TrackimoConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, domain="trackimo"):
     """Handle the OAuth2 configuration flow for Trackimo."""
