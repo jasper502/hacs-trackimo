@@ -23,33 +23,9 @@ async def async_setup(hass: HomeAssistant, config: dict):
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up Trackimo from a config entry."""
-
-    if not DOMAIN in hass.data:
-        hass.data[DOMAIN] = {}
-
-    client_id = entry.data["clientid"] if "clientid" in entry.data else None
-    client_secret = entry.data["clientsecret"] if "clientsecret" in entry.data else None
-    username = entry.data["username"] if "username" in entry.data else None
-    password = entry.data["password"] if "password" in entry.data else None
-
-    hass.data[DOMAIN][entry.entry_id] = Trackimo(
-        loop=hass.loop, client_id=client_id, client_secret=client_secret
-    )
-
-    if client_id and client_secret and username and password:
-        if not await hass.data[DOMAIN][entry.entry_id].login(
-            username,
-            password,
-        ):
-            raise CannotConnect
-
-    for component in PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, component)
-        )
-
+async def async_setup_entry(hass, entry):
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data["token"]["access_token"]
+    await hass.config_entries.async_forward_entry_setups(entry, ["device_tracker"])
     return True
 
 
