@@ -4,6 +4,9 @@ import logging
 import voluptuous as vol
 
 from homeassistant import config_entries, core, exceptions
+
+from homeassistant.helpers.config_entry_oauth2_flow import AbstractOAuth2FlowHandler
+
 from trackimo import Trackimo
 
 from .const import DOMAIN, TRACKIMO_CLIENTID, TRACKIMO_CLIENTSECRET
@@ -54,34 +57,56 @@ async def validate_input(hass: core.HomeAssistant, data):
     }
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Trackimo."""
+_LOGGER = logging.getLogger(__name__)
 
-    VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
+class ConfigFlow(AbstractOAuth2FlowHandler):
+    DOMAIN = "trackimo"
+
+    @property
+    def logger(self):
+        return _LOGGER
+
+    @property
+    def extra_authorize_data(self):
+        return {"scope": "read"}  # Adjust based on Trackimo's required scopes
 
     async def async_step_user(self, user_input=None):
-        """Handle the initial step."""
-        errors = {}
-        if user_input is not None:
-            try:
-                info = await validate_input(self.hass, user_input)
+        self.async_set_unique_id(self.DOMAIN)
+        return await super().async_step_user(user_input)
 
-                if "expires" in info:
-                    info["expires"] = info["expires"].timestamp()
+    async def async_oauth_create_entry(self, data):
+        return self.async_create_entry(title="Trackimo", data=data)
 
-                return self.async_create_entry(title=info["title"], data=info)
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
-                errors["base"] = "unknown"
 
-        return self.async_show_form(
-            step_id="user", data_schema=DATA_SCHEMA, errors=errors
-        )
+
+#class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+#    """Handle a config flow for Trackimo."""
+#
+#   VERSION = 1
+#    CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
+#
+#    async def async_step_user(self, user_input=None):
+#        """Handle the initial step."""
+#        errors = {}
+#        if user_input is not None:
+#            try:
+#                info = await validate_input(self.hass, user_input)
+#
+#                if "expires" in info:
+#                    info["expires"] = info["expires"].timestamp()
+#
+#                return self.async_create_entry(title=info["title"], data=info)
+#            except CannotConnect:
+#                errors["base"] = "cannot_connect"
+#            except InvalidAuth:
+#                errors["base"] = "invalid_auth"
+#            except Exception:  # pylint: disable=broad-except
+#                _LOGGER.exception("Unexpected exception")
+#                errors["base"] = "unknown"
+#
+#        return self.async_show_form(
+#            step_id="user", data_schema=DATA_SCHEMA, errors=errors
+#        )
 
 
 class CannotConnect(exceptions.HomeAssistantError):
