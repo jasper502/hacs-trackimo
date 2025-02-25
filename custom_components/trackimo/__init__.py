@@ -37,7 +37,7 @@ class TrackimoDataCoordinator(DataUpdateCoordinator):
         except Exception as e:
             raise UpdateFailed(f"Error fetching data: {e}")
 
-async def async_setup_entry(hass: HomeAssistant, entry: config_entries.ConfigEntry, async_add_entities):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     """Set up the Trackimo integration from a config entry."""
     access_token = entry.data["token"]["access_token"]
     coordinator = TrackimoDataCoordinator(hass, access_token)
