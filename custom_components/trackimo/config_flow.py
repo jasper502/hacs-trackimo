@@ -59,7 +59,7 @@ async def validate_input(hass: core.HomeAssistant, data):
 
 _LOGGER = logging.getLogger(__name__)
 
-class ConfigFlow(AbstractOAuth2FlowHandler):
+class ConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler):
     DOMAIN = "trackimo"
 
     @property
