@@ -1,49 +1,49 @@
-"""The Trackimo integration."""
-import asyncio
-
-import voluptuous as vol
+import aiohttp
 import logging
-
-from homeassistant import exceptions
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.components.device_tracker import DOMAIN as DEVICE_TRACKER
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from trackimo import Trackimo
+_LOGGER = logging.getLogger(__name__)
 
-from .const import DOMAIN
+class TrackimoDataCoordinator(DataUpdateCoordinator):
+    """Coordinator to fetch data from the Trackimo API."""
 
-CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
-
-PLATFORMS = [DEVICE_TRACKER]
-
-
-async def async_setup(hass: HomeAssistant, config: dict):
-    """Set up the Trackimo component."""
-    return True
-
-
-async def async_setup_entry(hass, entry):
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data["token"]["access_token"]
-    await hass.config_entries.async_forward_entry_setups(entry, ["device_tracker"])
-    return True
-
-
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Unload a config entry."""
-    unload_ok = all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, component)
-                for component in PLATFORMS
-            ]
+    def __init__(self, hass: HomeAssistant, access_token: str):
+        """Initialize the coordinator."""
+        self.hass = hass
+        self.access_token = access_token
+        super().__init__(
+            hass,
+            _LOGGER,
+            name="Trackimo Devices",
+            update_interval=300,  # Update every 5 minutes
         )
-    )
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
 
-    return unload_ok
+    async def _async_update_data(self):
+        """Fetch device data from the Trackimo API."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                headers = {"Authorization": f"Bearer {self.access_token}"}
+                async with session.get(
+                    "https://app.trackimo.com/api/v3/accounts/%s/devices", headers=headers
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        # Assume API returns a list of devices; adjust based on actual response
+                        return {device["id"]: device for device in data}
+                    else:
+                        raise UpdateFailed(f"API error: {response.status}")
+        except Exception as e:
+            raise UpdateFailed(f"Error fetching data: {e}")
 
+async def async_setup_entry(hass: HomeAssistant, entry: config_entries.ConfigEntry, async_add_entities):
+    """Set up the Trackimo integration from a config entry."""
+    access_token = entry.data["token"]["access_token"]
+    coordinator = TrackimoDataCoordinator(hass, access_token)
+    await coordinator.async_config_entry_first_refresh()
 
-class CannotConnect(exceptions.HomeAssistantError):
-    """Error to indicate we cannot connect."""
+    # Create device tracker entities
+    from .device import TrackimoDevice  # Import here to avoid circular imports
+    devices = coordinator.data
+    entities = [TrackimoDevice(device_data, coordinator) for device_data in devices.values()]
+    async_add_entities(entities)
