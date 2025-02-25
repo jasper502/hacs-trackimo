@@ -1,8 +1,6 @@
 # NOTICE
 
-Life360 has aggressively pushed the home automation community away by actively preventing access to their platform.
-
-There is no reliable way to extract Life360 data - and my strong suggestion is to find a better product that embraces their community rather than pushing it away like @life360 do.
+Forked from https://github.com/troykelly/hacs-trackimo.  Going to try and revive this.
 
 # Trackimo for Home Assistant
 
