@@ -1,50 +1,74 @@
-import aiohttp
-import logging
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+import aiohttp
+import asyncio
+import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-class TrackimoDataCoordinator(DataUpdateCoordinator):
-    """Coordinator to fetch data from the Trackimo API."""
+DOMAIN = "trackimo"
 
-    def __init__(self, hass: HomeAssistant, access_token: str):
-        """Initialize the coordinator."""
-        self.hass = hass
-        self.access_token = access_token
-        super().__init__(
-            hass,
-            _LOGGER,
-            name="Trackimo Devices",
-            update_interval=300,  # Update every 5 minutes
-        )
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up the Trackimo integration."""
+    return True
 
-    async def _async_update_data(self):
-        """Fetch device data from the Trackimo API."""
-        try:
-            async with aiohttp.ClientSession() as session:
-                headers = {"Authorization": f"Bearer {self.access_token}"}
-                async with session.get(
-                    "https://app.trackimo.com/api/v3/accounts/%s/devices", headers=headers
-                ) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        # Assume API returns a list of devices; adjust based on actual response
-                        return {device["device_id"]: device for device in data}
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Trackimo from a config entry."""
+    access_token = entry.data["access_token"]
+
+    async def async_update_data():
+        """Fetch data from the Trackimo API, refreshing the token if necessary."""
+        async with aiohttp.ClientSession() as session:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            async with session.get("https://app.trackimo.com/api/v3/user", headers=headers) as resp:
+                if resp.status == 401:  # Token expired
+                    new_token = await refresh_access_token(hass, entry)
+                    if new_token:
+                        headers["Authorization"] = f"Bearer {new_token}"
+                        async with session.get("https://app.trackimo.com/api/v3/user", headers=headers) as resp:
+                            if resp.status != 200:
+                                raise UpdateFailed(f"Failed to fetch data after token refresh: {resp.status}")
+                            return await resp.json()
                     else:
-                        raise UpdateFailed(f"API error: {response.status}")
-        except Exception as e:
-            raise UpdateFailed(f"Error fetching data: {e}")
+                        raise UpdateFailed("Token refresh failed")
+                elif resp.status != 200:
+                    raise UpdateFailed(f"Failed to fetch data: {resp.status}")
+                return await resp.json()
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up the Trackimo integration from a config entry."""
-    access_token = entry.data["token"]["access_token"]
-    coordinator = TrackimoDataCoordinator(hass, access_token)
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name="Trackimo",
+        update_method=async_update_data,
+        update_interval=asyncio.timedelta(minutes=5),
+    )
+
     await coordinator.async_config_entry_first_refresh()
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    await hass.config_entries.async_forward_entry_setup(entry, "device_tracker")
+    return True
 
-    # Create device tracker entities
-    from .device import TrackimoDevice  # Import here to avoid circular imports
-    devices = coordinator.data
-    entities = [TrackimoDevice(device_data, coordinator) for device_data in devices.values()]
-    async_add_entities(entities)
+async def refresh_access_token(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
+    """Refresh the access token using the refresh token."""
+    refresh_token = entry.data.get("refresh_token")
+    if not refresh_token:
+        _LOGGER.error("No refresh token available")
+        return None
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://app.trackimo.com/api/v3/token",
+            data={"refresh_token": refresh_token, "grant_type": "refresh_token"}
+        ) as resp:
+            if resp.status != 200:
+                _LOGGER.error("Failed to refresh token: %s", resp.status)
+                return None
+            token_data = await resp.json()
+            new_access_token = token_data.get("access_token")
+            if new_access_token:
+                hass.config_entries.async_update_entry(
+                    entry, data={**entry.data, "access_token": new_access_token}
+                )
+                return new_access_token
+            return None
