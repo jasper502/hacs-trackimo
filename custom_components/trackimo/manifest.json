@@ -3,6 +3,7 @@
   "domain": "trackimo",
   "name": "Trackimo",
   "documentation": "https://github.com/jasper502/hacs-trackimo",
+  "issue_tracker": "https://github.com/jasper502/hacs-trackimo/issues",
   "dependencies": ["application_credentials"],
   "codeowners": ["@jasper502"],
   "requirements": ["aiohttp>=3.8.0"]
