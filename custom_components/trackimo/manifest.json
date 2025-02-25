@@ -1,16 +1,8 @@
 {
-  "version": "0.0.23",
   "domain": "trackimo",
   "name": "Trackimo",
-  "config_flow": true,
-  "documentation": "https://github.com/jasper502/hacs-trackimo/wiki",
-  "issue_tracker": "https://github.com/jasper502/hacs-trackimo/issues",
-  "ssdp": [],
-  "zeroconf": [],
-  "homekit": {},
-  "dependencies": [],
-  "codeowners": [
-    "@jasper502"
-  ],
-  "iot_class": "cloud_polling"
+  "documentation": "https://github.com/jasper502/hacs-trackimo",
+  "dependencies": ["application_credentials"],
+  "codeowners": ["@yourusername"],
+  "requirements": ["aiohttp>=3.8.0"]
 }
