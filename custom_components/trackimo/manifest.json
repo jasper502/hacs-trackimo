@@ -5,9 +5,6 @@
   "config_flow": true,
   "documentation": "https://github.com/jasper502/hacs-trackimo/wiki",
   "issue_tracker": "https://github.com/jasper502/hacs-trackimo/issues",
-  "requirements": [
-    "trackimo==0.1.30"
-  ],
   "ssdp": [],
   "zeroconf": [],
   "homekit": {},
