@@ -1,8 +1,9 @@
 {
+  "version": "0.0.3",
   "domain": "trackimo",
   "name": "Trackimo",
   "documentation": "https://github.com/jasper502/hacs-trackimo",
   "dependencies": ["application_credentials"],
-  "codeowners": ["@yourusername"],
+  "codeowners": ["@jasper502"],
   "requirements": ["aiohttp>=3.8.0"]
 }
