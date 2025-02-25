@@ -1,10 +1,10 @@
 {
-  "version": "0.0.22",
+  "version": "0.0.23",
   "domain": "trackimo",
   "name": "Trackimo",
   "config_flow": true,
-  "documentation": "https://github.com/troykelly/hacs-trackimo/wiki",
-  "issue_tracker": "https://github.com/troykelly/hacs-trackimo/issues",
+  "documentation": "https://github.com/jasper502/hacs-trackimo/wiki",
+  "issue_tracker": "https://github.com/jasper502/hacs-trackimo/issues",
   "requirements": [
     "trackimo==0.1.30"
   ],
@@ -13,7 +13,7 @@
   "homekit": {},
   "dependencies": [],
   "codeowners": [
-    "@troykelly"
+    "@jasper502"
   ],
   "iot_class": "cloud_polling"
 }
